@@ -69,13 +69,17 @@ p1 <- ggplot(t, aes(x= fct_relevel(name, c("GPe", "DMS", "DLS")), y= value)) +
          panel.grid.minor= element_blank()) +
   theme(axis.line= element_line(color= "black"),
         axis.title.y= element_text(size= 21),
+        axis.text.y= element_text(size= 18, color= "black"),
         axis.text.x= element_text(size= 16, angle= 45, vjust= 0.6, color= "black")) +
   scale_y_continuous(expand= c(0,0),
                      limits= c(0,1.5))
 p1
 ```
 
-![ ](Figures/fig1B.jpg){width=67%}
+::: {layout-ncol=2}
+![Turner](Figures/unnamed-chunk-3-1.png)
+![Baker](Figures/fig1B.jpg)
+
 
 ```{r}
 aov1B <- aov(value ~ name, data= t)
@@ -112,6 +116,7 @@ p2 <- ggplot(t2, aes(x= fct_relevel(name, c("DMS_1D", "DLS_1D")), y= value)) +
          panel.grid.minor = element_blank()) +
   theme(axis.line = element_line(color = "black"),
         axis.title.y= element_text(size= 22),
+        axis.text.y= element_text(size= 18, color= "black"),
         axis.title.x= element_text(size= 22),
         axis.text.x= element_text(size= 16, angle= 45, vjust= 0.6, color= "black"))
 p2
