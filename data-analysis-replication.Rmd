@@ -1,0 +1,236 @@
+---
+title: "data-analysis-replication"
+author: "Turner Lime"
+date: "2024-04-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning= FALSE, message= FALSE, echo = TRUE)
+knitr::opts_chunk$set(fig.path = "Figures/", fig.align= "left")
+```
+
+### Initialize Libraries:
+```{r}
+library(tidyverse)
+library(dplyr)
+library(skimr)
+library(infer)
+library(forcats)
+library(ggpubr)
+library(broom)
+library(gridExtra)
+```
+
+
+
+### Figure 1:
+```{r}
+x <- read_csv("https://raw.githubusercontent.com/LimeTur21/data-analysis-replication/main/Figure1.csv", skip= 1)
+d <- tibble(x) |>
+  transmute(ID...1 = ID...1,
+            GPe = GPe,
+            DMS...3 = DMS...3,
+            DLS...4 = DLS...4,
+            ID...6 = ID...6,
+            DMS...7 = DMS...7,
+            DLS...8 = DLS...8)
+
+f1B <- tibble(brain_region= c("GPe", "DMS", "DLS"),
+              rel_fluor = c(mean(d$GPe), mean(d$DMS...3), mean(d$DLS...4)),
+              GPe = d$GPe,
+              DMS = d$DMS...3,
+              DLS = d$DLS...4)
+
+f1D <- tibble(rel_fluor2 = c(mean(d$DMS...7), mean(d$DLS...8), NA),
+              DMS_1D = d$DMS...7,
+              DLS_1D = d$DLS...8)
+```
+
+```{r}
+t <- f1B |> pivot_longer(GPe:DLS) |> 
+  mutate(name = as.factor(name)) |> 
+  dplyr::select(name, value)
+
+t_bar <- t |> group_by(name) |>
+  summarise(value= mean(value))
+
+p1 <- ggplot(t, aes(x= fct_relevel(name, c("GPe", "DMS", "DLS")), y= value)) +
+  geom_bar(data = t_bar, stat = "identity", fill=c("azure4", "red", "cornflowerblue"), width= 0.7) +
+  geom_point(size= 3) +
+  theme(axis.title.x= element_blank()) +
+  labs(y= "Relative fluorescence\n projection density (arb. units)") +
+  geom_hline(yintercept= 1.0, linetype= 2, size= 1, alpha= 0.8) +
+  annotate("segment", x= 2, xend= 3, y= 0.8, yend= 0.8, size= 1) +
+  annotate("text", x= 2.5, y= 0.82, label= "*", size= 8) +
+  theme(panel.background= element_rect(fill='transparent'),
+         plot.background= element_rect(fill='transparent', color=NA),
+         panel.grid.major= element_blank(),
+         panel.grid.minor= element_blank()) +
+  theme(axis.line= element_line(color= "black"),
+        axis.title.y= element_text(size= 21),
+        axis.text.x= element_text(size= 16, angle= 45, vjust= 0.6, color= "black")) +
+  scale_y_continuous(expand= c(0,0),
+                     limits= c(0,1.5))
+p1
+```
+
+```{r}
+aov1B <- aov(value ~ name, data= t)
+summary(aov1B)
+
+t <- within(t, name <- relevel(name, ref = "GPe"))
+posthoc_aov1B <- TukeyHSD(aov1B, which= "name", conf.level= 0.95)
+posthoc_aov1B
+
+cat('\n', "R-squared: ", sep= "")
+cat(glance(aov1B)["r.squared"][[1]])
+```
+
+```{r}
+t2 <- f1D |> pivot_longer(DMS_1D:DLS_1D) |> 
+  mutate(name = factor(name)) |> 
+  dplyr::select(name, value)
+
+t_bar2 <- t2 |> group_by(name) |>
+  summarise(value= mean(value))
+
+p2 <- ggplot(t2, aes(x= fct_relevel(name, c("DMS_1D", "DLS_1D")), y= value)) +
+  geom_bar(data = t_bar2, stat = "identity", fill=c("red", "cornflowerblue"), width= 0.7) +
+  geom_point(size= 3) +
+  labs(y="GPe Retrobead\n Cells/Area (mm^2)", x= "Injection Site") +
+  annotate("segment", x= 1, xend= 2, y= 125, yend= 125, size= 1) +
+  annotate("text", x= 1.5, y= 127, label= "*", size= 8) +
+  scale_x_discrete(labels= c("DMS_1D" = "DMS", "DLS_1D" = "DLS")) +
+  scale_y_continuous(expand = c(0,0),
+                     limits = c(0,150)) +
+  theme(panel.background = element_rect(fill='transparent'),
+         plot.background = element_rect(fill='transparent', color=NA),
+         panel.grid.major = element_blank(),
+         panel.grid.minor = element_blank()) +
+  theme(axis.line = element_line(color = "black"),
+        axis.title.y= element_text(size= 22),
+        axis.title.x= element_text(size= 22),
+        axis.text.x= element_text(size= 16, angle= 45, vjust= 0.6, color= "black"))
+p2
+```
+
+```{r}
+ttest1D <- t.test(f1D$DMS_1D, f1D$DLS_1D, alternative= "two.sided")
+glance(ttest1D)
+```
+
+```{r}
+x2 <- read_csv("https://raw.githubusercontent.com/LimeTur21/data-analysis-replication/main/Figure2.csv", col_names= TRUE, skip= 2)
+d2 <- tibble(x2)
+
+f2B <- tibble(RR20_Valued = d2$Valued...2,
+              RR20_Devalued = d2$Devalued...3,
+              RI120_Valued = d2$Valued...4,
+              RI120_Devalued = d2$Devalued...5)
+
+t2B_RR20 <- f2B |> pivot_longer(RR20_Valued:RR20_Devalued) |>
+  mutate(name = factor(name)) |>
+  dplyr::select(c(name, value)) |>
+  na.exclude()
+
+t_bar2B_RR20 <- t2B_RR20 |> group_by(name) |>
+  summarise(value= mean(value))
+
+t_line2B_RR20 <- f2B |>
+  dplyr::select(RR20_Valued, RR20_Devalued) |>
+  na.exclude() |>
+  mutate(id = c(1,2,3,4,5,6))
+
+valued_only <- t2B_RR20 |>
+  filter(name == "RR20_Valued")
+devalued_only <- t2B_RR20 |>
+  filter(name == "RR20_Devalued")
+
+p2B.1 <- ggplot(t2B_RR20, aes(x= fct_relevel(name, c("RR20_Valued", "RR20_Devalued")), y= value)) +
+  geom_bar(data = t_bar2B_RR20, stat = "identity", color= "black", fill= "coral1", width= 0.7) +
+  annotate("segment", x= 1, xend= 2, y= valued_only[["value"]][[1]], yend= devalued_only[["value"]][[1]]) +
+  annotate("segment", x= 1, xend= 2, y= valued_only[["value"]][[2]], yend= devalued_only[["value"]][[2]]) +
+  annotate("segment", x= 1, xend= 2, y= valued_only[["value"]][[3]], yend= devalued_only[["value"]][[3]]) +
+  annotate("segment", x= 1, xend= 2, y= valued_only[["value"]][[4]], yend= devalued_only[["value"]][[4]]) +
+  annotate("segment", x= 1, xend= 2, y= valued_only[["value"]][[5]], yend= devalued_only[["value"]][[5]]) +
+  annotate("segment", x= 1, xend= 2, y= valued_only[["value"]][[6]], yend= devalued_only[["value"]][[6]]) +
+  geom_point(fill= "red", size= 3, color= "black", pch= 21) +
+  annotate("segment", x= 1, xend= 2, y= 126, yend= 126, size= 1) +
+  annotate("text", label= "*", x= 1.5, y= 128, size= 8) +
+  labs(y= "Nose Pokes (n)",
+       title= "RR") +
+  theme(axis.title.x= element_blank(),
+        plot.title = element_text(hjust=0.5)) +
+  theme(legend.position= "none") +
+  scale_y_continuous(expand = c(0, 0),
+                     limits = c(0, 133)) +
+  scale_x_discrete(labels= c("RR20_Valued"= "Valued", "RR20_Devalued"= "Devalued")) +
+  theme(panel.background = element_rect(fill='transparent'),
+         plot.background = element_rect(fill='transparent', color=NA),
+         panel.grid.major = element_blank(),
+         panel.grid.minor = element_blank()) +
+  theme(axis.line = element_line(color = "black")) +
+  theme(plot.title = element_text(margin=margin(b = 25, unit = "pt")),
+        axis.title.y= element_text(size= 22),
+        axis.text.x= element_text(size= 14, angle= 45, vjust= 0.6, color= "black"))
+
+##########
+
+t2B_RI120 <- f2B |> pivot_longer(RI120_Valued:RI120_Devalued) |>
+  mutate(name = factor(name)) |>
+  dplyr::select(c(name, value)) |>
+  na.exclude()
+
+t_bar2B_RI120 <- t2B_RI120 |> group_by(name) |>
+  summarise(value= mean(value))
+
+valued_only <- t2B_RI120 |>
+  filter(name == "RI120_Valued")
+devalued_only <- t2B_RI120 |>
+  filter(name == "RI120_Devalued")
+
+p2B.2 <- ggplot(t2B_RI120, aes(x= fct_relevel(name, c("RI120_Valued", "RI120_Devalued")), y= value)) +
+  geom_bar(data = t_bar2B_RI120, stat = "identity", color= "black", fill= "cornflowerblue", width= 0.7) +
+  annotate("segment", x= 1, xend= 2, y= valued_only[["value"]][[1]], yend= devalued_only[["value"]][[1]]) +
+  annotate("segment", x= 1, xend= 2, y= valued_only[["value"]][[2]], yend= devalued_only[["value"]][[2]]) +
+  annotate("segment", x= 1, xend= 2, y= valued_only[["value"]][[3]], yend= devalued_only[["value"]][[3]]) +
+  annotate("segment", x= 1, xend= 2, y= valued_only[["value"]][[4]], yend= devalued_only[["value"]][[4]]) +
+  annotate("segment", x= 1, xend= 2, y= valued_only[["value"]][[5]], yend= devalued_only[["value"]][[5]]) +
+  geom_point(fill= "blue", size= 3, color= "black", pch= 21) +
+  labs(y= "Nose Pokes (n)",
+       title= "RI") +
+  theme(axis.title.x= element_blank(),
+        plot.title = element_text(hjust=0.5)) +
+  theme(legend.position= "none") +
+  scale_y_continuous(expand = c(0, 0),
+                     limits = c(0, 100)) +
+  scale_x_discrete(labels= c("RI120_Valued"= "Valued", "RI120_Devalued"= "Devalued")) +
+  theme(panel.background = element_rect(fill='transparent'),
+         plot.background = element_rect(fill='transparent', color=NA),
+         panel.grid.major = element_blank(),
+         panel.grid.minor = element_blank()) +
+  theme(axis.line = element_line(color = "black")) +
+  theme(plot.title = element_text(margin=margin(b = 25, unit = "pt")),
+        axis.title.y= element_text(size= 22),
+        axis.text.x= element_text(size= 14, angle= 45, vjust= 0.6, color= "black"))
+
+##########
+
+grid.arrange(p2B.1, p2B.2, nrow = 1)
+```
+
+```{r}
+f2B_wilcox1 <- wilcox.test(f2B$RR20_Valued, f2B$RR20_Devalued, alternative= "two.sided")
+f2B_wilcox2 <- wilcox.test(f2B$RI120_Valued, f2B$RI120_Devalued, alternative= "two.sided")
+
+cat("Wilcox Test (RR)\nW:", 
+    f2B_wilcox1["statistic"][[1]], 
+    "\np-value:", f2B_wilcox1["p.value"][[1]],
+    "\nAlternative Hypothesis:", f2B_wilcox1["alternative"][[1]],
+    "\n\nWilcox Test (RI)\nW:", 
+    f2B_wilcox2["statistic"][[1]], 
+    "\np-value:", f2B_wilcox2["p.value"][[1]],
+    "\nAlternative Hypothesis:", f2B_wilcox2["alternative"][[1]])
+```
+
