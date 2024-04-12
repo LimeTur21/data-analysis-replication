@@ -56,7 +56,7 @@ t_bar <- t |> group_by(name) |>
   summarise(value= mean(value))
 
 p1 <- ggplot(t, aes(x= fct_relevel(name, c("GPe", "DMS", "DLS")), y= value)) +
-  geom_bar(data = t_bar, stat = "identity", fill=c("azure4", "red", "cornflowerblue"), width= 0.7) +
+  geom_bar(data = t_bar, stat = "identity", fill=c("cornflowerblue", "red", "azure4"), width= 0.7) +
   geom_point(size= 3) +
   theme(axis.title.x= element_blank()) +
   labs(y= "Relative fluorescence\n projection density (arb. units)") +
@@ -74,6 +74,8 @@ p1 <- ggplot(t, aes(x= fct_relevel(name, c("GPe", "DMS", "DLS")), y= value)) +
                      limits= c(0,1.5))
 p1
 ```
+
+![ ](Figures/fig1B.jpg){width=67%}
 
 ```{r}
 aov1B <- aov(value ~ name, data= t)
@@ -96,7 +98,7 @@ t_bar2 <- t2 |> group_by(name) |>
   summarise(value= mean(value))
 
 p2 <- ggplot(t2, aes(x= fct_relevel(name, c("DMS_1D", "DLS_1D")), y= value)) +
-  geom_bar(data = t_bar2, stat = "identity", fill=c("red", "cornflowerblue"), width= 0.7) +
+  geom_bar(data = t_bar2, stat = "identity", fill=c("cornflowerblue", "red"), width= 0.7) +
   geom_point(size= 3) +
   labs(y="GPe Retrobead\n Cells/Area (mm^2)", x= "Injection Site") +
   annotate("segment", x= 1, xend= 2, y= 125, yend= 125, size= 1) +
@@ -114,6 +116,8 @@ p2 <- ggplot(t2, aes(x= fct_relevel(name, c("DMS_1D", "DLS_1D")), y= value)) +
         axis.text.x= element_text(size= 16, angle= 45, vjust= 0.6, color= "black"))
 p2
 ```
+
+![ ](Figures/fig1D.jpg){width=67%}
 
 ```{r}
 ttest1D <- t.test(f1D$DMS_1D, f1D$DLS_1D, alternative= "two.sided")
@@ -148,7 +152,7 @@ devalued_only <- t2B_RR20 |>
   filter(name == "RR20_Devalued")
 
 p2B.1 <- ggplot(t2B_RR20, aes(x= fct_relevel(name, c("RR20_Valued", "RR20_Devalued")), y= value)) +
-  geom_bar(data = t_bar2B_RR20, stat = "identity", color= "black", fill= "coral1", width= 0.7) +
+  geom_bar(data = t_bar2B_RR20, stat = "identity", color= "black", fill= "red", alpha= 0.4, width= 0.7) +
   annotate("segment", x= 1, xend= 2, y= valued_only[["value"]][[1]], yend= devalued_only[["value"]][[1]]) +
   annotate("segment", x= 1, xend= 2, y= valued_only[["value"]][[2]], yend= devalued_only[["value"]][[2]]) +
   annotate("segment", x= 1, xend= 2, y= valued_only[["value"]][[3]], yend= devalued_only[["value"]][[3]]) +
@@ -173,6 +177,7 @@ p2B.1 <- ggplot(t2B_RR20, aes(x= fct_relevel(name, c("RR20_Valued", "RR20_Devalu
   theme(axis.line = element_line(color = "black")) +
   theme(plot.title = element_text(margin=margin(b = 25, unit = "pt")),
         axis.title.y= element_text(size= 22),
+        axis.text.y= element_text(size= 18, color= "black"),
         axis.text.x= element_text(size= 14, angle= 45, vjust= 0.6, color= "black"))
 
 ##########
@@ -213,12 +218,15 @@ p2B.2 <- ggplot(t2B_RI120, aes(x= fct_relevel(name, c("RI120_Valued", "RI120_Dev
   theme(axis.line = element_line(color = "black")) +
   theme(plot.title = element_text(margin=margin(b = 25, unit = "pt")),
         axis.title.y= element_text(size= 22),
+        axis.text.y= element_text(size= 18, color= "black"),
         axis.text.x= element_text(size= 14, angle= 45, vjust= 0.6, color= "black"))
 
 ##########
 
 grid.arrange(p2B.1, p2B.2, nrow = 1)
 ```
+![ ](Figures/fig2B.jpg){width=67%}
+
 
 ```{r}
 f2B_wilcox1 <- wilcox.test(f2B$RR20_Valued, f2B$RR20_Devalued, alternative= "two.sided")
